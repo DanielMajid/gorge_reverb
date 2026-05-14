@@ -50,27 +50,46 @@ public:
 
   enum
   {
-    TIME = 0U,
-    DEPTH,
+    SIZE = 0U,
+    DECAY,
     MIX,
-    PARAM4,
+    MODE,
+    PREDELAY,
+    DIFFUSION,
+    HIGH_CUT,
+    MOD_DEPTH,
+    MOD_RATE,
+    FREEZE,
     NUM_PARAMS
   };
 
-  // Note: Make sure that default param values correspond to declarations in header.c
   struct Params
   {
-    float time;
-    float depth;
+    // Main controls
+    float size;
+    float decay;
     float mix;
-    uint32_t param4;
+    // Edit controls
+    uint32_t mode;
+    float predelay_ms;
+    float diffusion;
+    float high_cut_pitch;
+    float mod_depth;
+    float mod_rate;
+    bool freeze;
 
     void reset()
     {
-      time = 0.25f;
-      depth = 0.25f;
+      size = 0.5f;
+      decay = 0.5f;
       mix = 0.f;
-      param4 = 1;
+      mode = MODE_BYPASS;
+      predelay_ms = 40.f;
+      diffusion = 7.f;
+      high_cut_pitch = 8.5f;
+      mod_depth = 6.f;
+      mod_rate = 0.2f;
+      freeze = false;
     }
 
     Params() { reset(); }
@@ -78,34 +97,58 @@ public:
 
   enum
   {
-    PARAM4_VALUE0 = 0,
-    PARAM4_VALUE1,
-    PARAM4_VALUE2,
-    PARAM4_VALUE3,
-    NUM_PARAM4_VALUES,
+    MODE_BYPASS = 0,
+    MODE_NORM,
+    MODE_WASH,
+    MODE_DARK,
+    MODE_FREEZE,
+    NUM_MODE_VALUES,
   };
 
   inline void setParameter(uint8_t index, int32_t value) override final
   {
+    // Keep this conversion layer thin: just decode/normalize host values.
+    // All curve shaping and cross-parameter behavior lives in updateEngineParams().
     switch (index)
     {
-    case TIME:
-      params_.time = param_10bit_to_f32(value);
-      reverb.setTimeScale(0.15 + params_.time * 3.0);
+    case SIZE:
+      params_.size = param_10bit_to_f32(value);
       break;
 
-    case DEPTH:
-      params_.depth = param_10bit_to_f32(value);
-      reverb.setTankModDepth(params_.depth * 16.0);
+    case DECAY:
+      params_.decay = param_10bit_to_f32(value);
       break;
 
     case MIX:
       params_.mix = value / 1000.f;
       break;
 
-    case PARAM4:
-      params_.param4 = static_cast<uint32_t>(value);
-      applyMode(params_.param4);
+    case MODE:
+      params_.mode = static_cast<uint32_t>(value);
+      break;
+
+    case PREDELAY:
+      params_.predelay_ms = static_cast<float>(value);
+      break;
+
+    case DIFFUSION:
+      params_.diffusion = static_cast<float>(value) * 0.1f;
+      break;
+
+    case HIGH_CUT:
+      params_.high_cut_pitch = static_cast<float>(value) * 0.1f;
+      break;
+
+    case MOD_DEPTH:
+      params_.mod_depth = static_cast<float>(value) * 0.1f;
+      break;
+
+    case MOD_RATE:
+      params_.mod_rate = static_cast<float>(value) * 0.01f;
+      break;
+
+    case FREEZE:
+      params_.freeze = (value != 0);
       break;
 
     default:
@@ -115,7 +158,8 @@ public:
 
   inline const char *getParameterStrValue(uint8_t index, int32_t value) const override final
   {
-    static const char *param4_strings[NUM_PARAM4_VALUES] = {
+    static const char *mode_strings[NUM_MODE_VALUES] = {
+      "BYPS",
       "NORM",
       "WASH",
       "DARK",
@@ -124,9 +168,9 @@ public:
 
     switch (index)
     {
-    case PARAM4:
-      if (value >= PARAM4_VALUE0 && value < NUM_PARAM4_VALUES)
-        return param4_strings[value];
+    case MODE:
+      if (value >= MODE_BYPASS && value < NUM_MODE_VALUES)
+        return mode_strings[value];
       break;
     default:
       break;
@@ -147,11 +191,7 @@ public:
 
     reverb.setSampleRate(getSampleRate());
     reverb.clear();
-    reverb.setInputFilterLowCutoffPitch(0.0);
-    reverb.setInputFilterHighCutoffPitch(10.0);
-    applyMode(params_.param4);
-    reverb.setTimeScale(0.15 + params_.time * 3.0);
-    reverb.setTankModDepth(params_.depth * 16.0);
+    updateEngineParams(params_);
   }
 
   void teardown() override final {}
@@ -159,14 +199,15 @@ public:
   void reset() override final
   {
     reverb.clear();
-    applyMode(params_.param4);
-    reverb.setTimeScale(0.15 + params_.time * 3.0);
-    reverb.setTankModDepth(params_.depth * 16.0);
+    updateEngineParams(params_);
   }
 
   void process(const float *__restrict in, float *__restrict out, uint32_t frames) override final
   {
     const Params p = params_;
+    // Recompute mapped coefficients per render call so UI moves are immediate.
+    updateEngineParams(p);
+
     const float wet = p.mix < -1.f ? 0.f : (p.mix > 1.f ? 1.f : (p.mix + 1.f) * 0.5f);
     const float dry = 1.f - wet;
 
@@ -180,59 +221,77 @@ public:
   }
 
 private:
-  void applyMode(uint32_t mode)
+  struct ModeTuning
+  {
+    // MODE does not replace normal controls; it offsets the "character" voicing.
+    bool diffuse_input;
+    float input_low_pitch;
+    float low_cut_pitch;
+    float mod_shape;
+    bool force_freeze;
+  };
+
+  static float clampf(float v, float lo, float hi)
+  {
+    return v < lo ? lo : (v > hi ? hi : v);
+  }
+
+  static ModeTuning getModeTuning(uint32_t mode)
   {
     switch (mode)
     {
-    case PARAM4_VALUE0:
-      reverb.freeze(false);
-      reverb.enableInputDiffusion(true);
-      reverb.setPreDelay(0.03);
-      reverb.setDecay(0.84);
-      reverb.setTankDiffusion(4.0);
-      reverb.setTankFilterLowCutFrequency(2.0);
-      reverb.setTankFilterHighCutFrequency(8.5);
-      reverb.setTankModSpeed(0.5);
-      reverb.setTankModShape(0.50);
-      break;
-
-    case PARAM4_VALUE1:
-      reverb.freeze(false);
-      reverb.enableInputDiffusion(true);
-      reverb.setPreDelay(0.06);
-      reverb.setDecay(0.94);
-      reverb.setTankDiffusion(7.5);
-      reverb.setTankFilterLowCutFrequency(1.5);
-      reverb.setTankFilterHighCutFrequency(9.0);
-      reverb.setTankModSpeed(0.3);
-      reverb.setTankModShape(0.35);
-      break;
-
-    case PARAM4_VALUE2:
-      reverb.freeze(false);
-      reverb.enableInputDiffusion(true);
-      reverb.setPreDelay(0.04);
-      reverb.setDecay(0.97);
-      reverb.setTankDiffusion(6.0);
-      reverb.setTankFilterLowCutFrequency(0.5);
-      reverb.setTankFilterHighCutFrequency(6.0);
-      reverb.setTankModSpeed(0.2);
-      reverb.setTankModShape(0.70);
-      break;
-
-    case PARAM4_VALUE3:
+    case MODE_BYPASS:
+      // Neutral voicing: avoid extra character offsets and forced states.
+      return {true, 0.0f, 0.0f, 0.50f, false};
+    case MODE_NORM:
+      return {true, 0.0f, 2.0f, 0.50f, false};
+    case MODE_WASH:
+      return {true, 0.0f, 1.0f, 0.35f, false};
+    case MODE_DARK:
+      return {true, 0.0f, 0.5f, 0.70f, false};
+    case MODE_FREEZE:
     default:
-      reverb.enableInputDiffusion(true);
-      reverb.setPreDelay(0.05);
-      reverb.setDecay(1.0);
-      reverb.setTankDiffusion(10.0);
-      reverb.setTankFilterLowCutFrequency(0.0);
-      reverb.setTankFilterHighCutFrequency(10.0);
-      reverb.setTankModSpeed(0.1);
-      reverb.setTankModShape(0.50);
-      reverb.freeze(true);
-      break;
+      return {true, 0.0f, 0.0f, 0.50f, true};
     }
+  }
+
+  void updateEngineParams(const Params &p)
+  {
+    const ModeTuning m = getModeTuning(p.mode);
+
+    // Plateau-like pre-delay domain: ms from UI, seconds for Dattorro.
+    const float pre_delay_sec = clampf(p.predelay_ms * 0.001f, 0.f, 0.5f);
+
+    // Plateau-like size taper: square response then remap to ~0.01..4.0.
+    const float size_norm = clampf(p.size, 0.f, 1.f);
+    const float size_sq = size_norm * size_norm;
+    const float size = 0.01f + size_sq * (4.0f - 0.01f);
+
+    // Plateau-like decay shaping: map knob to 0.1..0.9999 then warp near long tails.
+    const float decay_knob = 0.1f + clampf(p.decay, 0.f, 1.f) * (0.9999f - 0.1f);
+    const float decay = 1.0f - (1.0f - decay_knob) * (1.0f - decay_knob);
+
+    // Plateau-like mod rate response: square taper then map to 1..100 speed domain.
+    float mod_rate = clampf(p.mod_rate, 0.f, 1.f);
+    mod_rate = mod_rate * mod_rate;
+    mod_rate = mod_rate * 99.f + 1.f;
+
+    reverb.enableInputDiffusion(m.diffuse_input);
+    reverb.setInputFilterLowCutoffPitch(m.input_low_pitch);
+    reverb.setInputFilterHighCutoffPitch(10.0f);
+
+    reverb.setTimeScale(size);
+    reverb.setPreDelay(pre_delay_sec);
+    reverb.setDecay(decay);
+    reverb.setTankDiffusion(clampf(p.diffusion, 0.f, 10.f));
+    reverb.setTankFilterLowCutFrequency(m.low_cut_pitch);
+    reverb.setTankFilterHighCutFrequency(clampf(p.high_cut_pitch, 0.f, 10.f));
+    reverb.setTankModDepth(clampf(p.mod_depth, 0.f, 16.f));
+    reverb.setTankModSpeed(mod_rate);
+    reverb.setTankModShape(m.mod_shape);
+
+    // MODE_FREEZE always wins; otherwise respect FRZ toggle.
+    reverb.freeze(m.force_freeze || p.freeze);
   }
 
   Dattorro reverb;
