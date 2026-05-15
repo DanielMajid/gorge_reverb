@@ -1,7 +1,6 @@
 #include "Dattorro.hpp"
 #include <cassert>
 #include <algorithm>
-#include <cmath>
 
 static inline float fast_exp2(float x)
 {
@@ -17,13 +16,8 @@ static inline float fast_exp2(float x)
 
 static inline float pitch_to_hz(float pitch)
 {
-    float ratio = fast_exp2(pitch - 5.0f);
-
-    // Polynomial approximation can undershoot below zero for low inputs.
-    // Fall back to accurate exp2f to keep filter cutoff domains valid.
-    if (ratio <= 0.0f) {
-        ratio = exp2f(pitch - 5.0f);
-    }
+    // Pitch domain here is centered around 5.0 -> 440 Hz in this mapping.
+    const float ratio = fast_exp2(pitch - 5.0f);
 
     const float hz = 440.0f * ratio;
     return hz > 1.0e-3f ? hz : 1.0e-3f;
@@ -37,18 +31,18 @@ Dattorro1997Tank::Dattorro1997Tank(const float initSampleRate,
     timePadding = initMaxLfoDepth;
     setSampleRate(initSampleRate);
 
-    leftOutDCBlock.setCutoffFreq(20.0);
-    rightOutDCBlock.setCutoffFreq(20.0);
+    leftOutDCBlock.setCutoffFreq(20.0f);
+    rightOutDCBlock.setCutoffFreq(20.0f);
 
     lfo1.setFrequency(lfo1Freq);
     lfo2.setFrequency(lfo2Freq);
     lfo3.setFrequency(lfo3Freq);
     lfo4.setFrequency(lfo4Freq);
 
-    lfo1.setRevPoint(0.5);
-    lfo2.setRevPoint(0.5);
-    lfo3.setRevPoint(0.5);
-    lfo4.setRevPoint(0.5);
+    lfo1.setRevPoint(0.5f);
+    lfo2.setRevPoint(0.5f);
+    lfo3.setRevPoint(0.5f);
+    lfo4.setRevPoint(0.5f);
 }
 
 void Dattorro1997Tank::process(const float leftIn, const float rightIn,
@@ -105,8 +99,8 @@ void Dattorro1997Tank::process(const float leftIn, const float rightIn,
     fade += fadeStep * fadeDir;
     fade = (fade < 0.0f) ? 0.0f : ((fade > 1.0f) ? 1.0f : fade);
 
-    assert(fade >= 0.0);
-    assert(fade <= 1.0);
+    assert(fade >= 0.0f);
+    assert(fade <= 1.0f);
 }
 
 void Dattorro1997Tank::freeze(bool freezeFlag) {

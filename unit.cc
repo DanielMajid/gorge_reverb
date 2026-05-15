@@ -85,10 +85,16 @@ __unit_callback __attribute__((visibility("default"))) int8_t unit_init(const un
     // clear buffer
     std::fill(allocated_buffer_, allocated_buffer_ + s_processor_instance.getBufferSize(), 0.f);
     s_processor_instance.init(allocated_buffer_);
+    // Reverb init can fail if internal delay objects cannot bind SDRAM slices.
+    if (!s_processor_instance.isReady())
+      return k_unit_err_memory;
   }
   else
   {
     s_processor_instance.init(nullptr);
+    // Keep behavior explicit if implementation ever switches to no-buffer mode.
+    if (!s_processor_instance.isReady())
+      return k_unit_err_memory;
   }
 
   // initialize cached parameters to defaults
@@ -127,6 +133,10 @@ __unit_callback __attribute__((visibility("default"))) void unit_render(const fl
 
 __unit_callback __attribute__((visibility("default"))) void unit_set_param_value(uint8_t id, int32_t value)
 {
+  // Guard against invalid host IDs before indexing the static parameter table.
+  if (id >= UNIT_REVFX_MAX_PARAM_COUNT)
+    return;
+
   // clip to valid range as defined in header
   value = clipminmaxi32(unit_header.params[id].min, value, unit_header.params[id].max);
 
@@ -138,12 +148,20 @@ __unit_callback __attribute__((visibility("default"))) void unit_set_param_value
 
 __unit_callback __attribute__((visibility("default"))) int32_t unit_get_param_value(uint8_t id)
 {
+  // Mirror SDK safety style: invalid IDs return neutral values.
+  if (id >= UNIT_REVFX_MAX_PARAM_COUNT)
+    return 0;
+
   // just return the cached value
   return static_cast<int32_t>(cached_values[id]);
 }
 
 __unit_callback __attribute__((visibility("default"))) const char *unit_get_param_str_value(uint8_t id, int32_t value)
 {
+  // String lookups must also validate ID before touching unit_header.params[].
+  if (id >= UNIT_REVFX_MAX_PARAM_COUNT)
+    return nullptr;
+
   value = clipminmaxi32(unit_header.params[id].min, value, unit_header.params[id].max); // just in case
   return s_processor_instance.getParameterStrValue(id, value);
 }

@@ -47,6 +47,8 @@ class Reverb : public Processor
 {
 public:
   uint32_t getBufferSize() const override final { return static_cast<uint32_t>(reverb.getBufferSize()); }
+  // Runtime queries this after init to ensure delay memory binding succeeded.
+  bool isReady() const { return initialized_; }
 
   enum
   {
@@ -153,6 +155,10 @@ public:
 
   void init(float *allocated_buffer) override final
   {
+    // init() may be called more than once across lifecycle transitions.
+    // Keep readiness explicit so unit_init can fail fast on partial setup.
+    initialized_ = false;
+
     if (!allocated_buffer) {
       return;
     }
@@ -168,18 +174,33 @@ public:
 
     reverb.clear();
     updateEngineParams(params_);
+    initialized_ = true;
   }
 
   void teardown() override final {}
 
   void reset() override final
   {
+    if (!initialized_) {
+      return;
+    }
+
     reverb.clear();
     updateEngineParams(params_);
   }
 
   void process(const float *__restrict in, float *__restrict out, uint32_t frames) override final
   {
+    if (!initialized_) {
+      // Safety fallback: pass dry signal until memory and delay lines are ready.
+      for (const float *out_end = out + frames * 2; out != out_end; in += 2, out += 2)
+      {
+        out[0] = in[0];
+        out[1] = in[1];
+      }
+      return;
+    }
+
     const Params p = params_;
 
     // Recompute mapped coefficients per render call so UI moves are immediate.
@@ -248,4 +269,5 @@ private:
 
   Dattorro reverb;
   Params params_;
+  bool initialized_ = false;
 };
