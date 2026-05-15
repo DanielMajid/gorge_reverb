@@ -5,9 +5,7 @@
  */
 
 #pragma once
-#include <vector>
 #include <cstdint>
-#include <iostream>
 #include <cassert>
 #include "../../Utilities.hpp"
 
@@ -20,11 +18,14 @@ public:
     InterpDelay(uint64_t maxLength = 512, uint64_t initDelayTime = 0) {
         assert(maxLength != 0);
         l = maxLength;
-        buffer = std::vector<T>(l, T(0));
         setDelayTime(initDelayTime);
     }
 
     void process() {
+        if (!buffer) {
+            output = T(0);
+            return;
+        }
         assert(w >= 0);
         assert(w < l);
         buffer[w] = input;
@@ -52,13 +53,16 @@ public:
     }
 
     T tap(int64_t i) const {
+        if (!buffer) {
+            return T(0);
+        }
 
         assert(i < l);
         assert(i >= 0);
 
         int64_t j = w - i;
         if (j < 0) {
-            j += buffer.size();
+            j += l;
         }
         return buffer[j];
     }
@@ -74,14 +78,32 @@ public:
         f = newDelayTime - static_cast<T>(t);
     }
 
+    void setMemory(T *mem, uint64_t memLength) {
+        assert(mem);
+        assert(memLength >= static_cast<uint64_t>(l));
+        buffer = mem;
+        clear();
+    }
+
+    uint64_t getMaxLength() const {
+        return static_cast<uint64_t>(l);
+    }
+
     void clear() {
-        std::fill(buffer.begin(), buffer.end(), T(0));
+        if (!buffer) {
+            input = T(0);
+            output = T(0);
+            return;
+        }
+        for (int64_t i = 0; i < l; ++i) {
+            buffer[i] = T(0);
+        }
         input = T(0);
         output = T(0);
     }
 
 private:
-    std::vector<T> buffer;
+    T *buffer = nullptr;
     int64_t w = 0;
     int64_t t = 0;
     T f = T(0);

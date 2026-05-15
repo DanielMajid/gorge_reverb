@@ -14,8 +14,8 @@ UCSRC = header.c
 
 # C++ sources 
 UCXXSRC = unit.cc \
-		  $(realpath $(PROJECT_ROOT)/src/Dattorro.cc) \
-		  $(realpath $(PROJECT_ROOT)/src/dsp/filters/OnePoleFilters.cc)
+		  src/Dattorro.cc \
+		  src/dsp/filters/OnePoleFilters.cc
 
 # List ASM source files here
 UASMSRC = 
@@ -26,7 +26,7 @@ UASMXSRC =
 # Include Paths
 #
 
-UINCDIR  = $(realpath $(PROJECT_ROOT)/src)
+UINCDIR  = $(PROJECT_ROOT)/src
 
 ##############################################################################
 # Library Paths
@@ -44,5 +44,5 @@ ULIBS  = -lm
 # Macros
 #
 
-UDEFS = 
+UDEFS = -DNDEBUG
 

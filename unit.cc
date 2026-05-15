@@ -46,11 +46,12 @@
 
 static Reverb s_processor_instance; // actual instance of custom delay object
 
-static int32_t cached_values[UNIT_REVFX_MAX_PARAM_COUNT]; // cached parameter values passed from hardware
+static int16_t cached_values[UNIT_REVFX_MAX_PARAM_COUNT]; // cached parameter values passed from hardware
 
 // ---- Callbacks exposed to runtime ----------------------------------------------
+extern "C" {
 
-__unit_callback int8_t unit_init(const unit_runtime_desc_t *desc)
+__unit_callback __attribute__((visibility("default"))) int8_t unit_init(const unit_runtime_desc_t *desc)
 {
   if (!desc)
     return k_unit_err_undef;
@@ -93,67 +94,69 @@ __unit_callback int8_t unit_init(const unit_runtime_desc_t *desc)
   // initialize cached parameters to defaults
   for (int id = 0; id < UNIT_REVFX_MAX_PARAM_COUNT; ++id)
   {
-    cached_values[id] = static_cast<int32_t>(unit_header.params[id].init);
+    cached_values[id] = static_cast<int16_t>(unit_header.params[id].init);
   }
 
   return k_unit_err_none;
 }
 
-__unit_callback void unit_teardown()
+__unit_callback __attribute__((visibility("default"))) void unit_teardown()
 {
   s_processor_instance.teardown();
 }
 
-__unit_callback void unit_reset()
+__unit_callback __attribute__((visibility("default"))) void unit_reset()
 {
   s_processor_instance.reset();
 }
 
-__unit_callback void unit_resume()
+__unit_callback __attribute__((visibility("default"))) void unit_resume()
 {
   s_processor_instance.resume();
 }
 
-__unit_callback void unit_suspend()
+__unit_callback __attribute__((visibility("default"))) void unit_suspend()
 {
   s_processor_instance.suspend();
 }
 
-__unit_callback void unit_render(const float *in, float *out, uint32_t frames)
+__unit_callback __attribute__((visibility("default"))) void unit_render(const float *in, float *out, uint32_t frames)
 {
   s_processor_instance.process(in, out, frames);
 }
 
-__unit_callback void unit_set_param_value(uint8_t id, int32_t value)
+__unit_callback __attribute__((visibility("default"))) void unit_set_param_value(uint8_t id, int32_t value)
 {
   // clip to valid range as defined in header
   value = clipminmaxi32(unit_header.params[id].min, value, unit_header.params[id].max);
 
   // cache value for unit_get_param_value(id)
-  cached_values[id] = value;
+  cached_values[id] = static_cast<int16_t>(value);
 
   s_processor_instance.setParameter(id, value);
 }
 
-__unit_callback int32_t unit_get_param_value(uint8_t id)
+__unit_callback __attribute__((visibility("default"))) int32_t unit_get_param_value(uint8_t id)
 {
   // just return the cached value
-  return cached_values[id];
+  return static_cast<int32_t>(cached_values[id]);
 }
 
-__unit_callback const char *unit_get_param_str_value(uint8_t id, int32_t value)
+__unit_callback __attribute__((visibility("default"))) const char *unit_get_param_str_value(uint8_t id, int32_t value)
 {
   value = clipminmaxi32(unit_header.params[id].min, value, unit_header.params[id].max); // just in case
   return s_processor_instance.getParameterStrValue(id, value);
 }
 
-__unit_callback void unit_set_tempo(uint32_t tempo)
+__unit_callback __attribute__((visibility("default"))) void unit_set_tempo(uint32_t tempo)
 {
   float bpm = (tempo >> 16) + (tempo & 0xFFFF) / static_cast<float>(0x10000);
   s_processor_instance.setTempo(bpm);
 }
 
-__unit_callback void unit_tempo_4ppqn_tick(uint32_t counter)
+__unit_callback __attribute__((visibility("default"))) void unit_tempo_4ppqn_tick(uint32_t counter)
 {
   s_processor_instance.tempo4ppqnTick(counter);
 }
+
+} // extern "C"

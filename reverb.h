@@ -46,20 +46,19 @@
 class Reverb : public Processor
 {
 public:
-  uint32_t getBufferSize() const override final { return 0U; }
+  uint32_t getBufferSize() const override final { return static_cast<uint32_t>(reverb.getBufferSize()); }
 
   enum
   {
     SIZE = 0U,
     DECAY,
     MIX,
-    MODE,
+    FREEZE,
+    MOD_DEPTH,
+    MOD_RATE,
     PREDELAY,
     DIFFUSION,
     HIGH_CUT,
-    MOD_DEPTH,
-    MOD_RATE,
-    FREEZE,
     NUM_PARAMS
   };
 
@@ -70,7 +69,6 @@ public:
     float decay;
     float mix;
     // Edit controls
-    uint32_t mode;
     float predelay_ms;
     float diffusion;
     float high_cut_pitch;
@@ -83,7 +81,6 @@ public:
       size = 0.5f;
       decay = 0.5f;
       mix = 0.f;
-      mode = MODE_BYPASS;
       predelay_ms = 40.f;
       diffusion = 7.f;
       high_cut_pitch = 8.5f;
@@ -93,16 +90,6 @@ public:
     }
 
     Params() { reset(); }
-  };
-
-  enum
-  {
-    MODE_BYPASS = 0,
-    MODE_NORM,
-    MODE_WASH,
-    MODE_DARK,
-    MODE_FREEZE,
-    NUM_MODE_VALUES,
   };
 
   inline void setParameter(uint8_t index, int32_t value) override final
@@ -123,8 +110,16 @@ public:
       params_.mix = value / 1000.f;
       break;
 
-    case MODE:
-      params_.mode = static_cast<uint32_t>(value);
+    case FREEZE:
+      params_.freeze = (value != 0);
+      break;
+
+    case MOD_DEPTH:
+      params_.mod_depth = static_cast<float>(value) * 0.1f;
+      break;
+
+    case MOD_RATE:
+      params_.mod_rate = static_cast<float>(value) * 0.01f;
       break;
 
     case PREDELAY:
@@ -139,18 +134,6 @@ public:
       params_.high_cut_pitch = static_cast<float>(value) * 0.1f;
       break;
 
-    case MOD_DEPTH:
-      params_.mod_depth = static_cast<float>(value) * 0.1f;
-      break;
-
-    case MOD_RATE:
-      params_.mod_rate = static_cast<float>(value) * 0.01f;
-      break;
-
-    case FREEZE:
-      params_.freeze = (value != 0);
-      break;
-
     default:
       break;
     }
@@ -158,38 +141,31 @@ public:
 
   inline const char *getParameterStrValue(uint8_t index, int32_t value) const override final
   {
-    static const char *mode_strings[NUM_MODE_VALUES] = {
-      "BYPS",
-      "NORM",
-      "WASH",
-      "DARK",
-      "FREEZ",
-    };
-
-    switch (index)
-    {
-    case MODE:
-      if (value >= MODE_BYPASS && value < NUM_MODE_VALUES)
-        return mode_strings[value];
-      break;
-    default:
-      break;
-    }
-
+    (void)index;
+    (void)value;
     return nullptr;
   }
 
-  Reverb() : reverb(48000.0, 16.0, 1.0)
+  Reverb() : reverb(48000.0f, 16.0f, 4.0f)
   {
     params_.reset();
   }
 
   void init(float *allocated_buffer) override final
   {
-    (void)allocated_buffer;
+    if (!allocated_buffer) {
+      return;
+    }
+
     params_.reset();
 
+    // setSampleRate() rebuilds internal delay objects, so bind external memory after it.
     reverb.setSampleRate(getSampleRate());
+
+    if (!reverb.setBuffer(allocated_buffer, reverb.getBufferSize())) {
+      return;
+    }
+
     reverb.clear();
     updateEngineParams(params_);
   }
@@ -205,6 +181,7 @@ public:
   void process(const float *__restrict in, float *__restrict out, uint32_t frames) override final
   {
     const Params p = params_;
+
     // Recompute mapped coefficients per render call so UI moves are immediate.
     updateEngineParams(p);
 
@@ -213,7 +190,7 @@ public:
 
     for (const float *out_end = out + frames * 2; out != out_end; in += 2, out += 2)
     {
-      reverb.process(in[0] * 0.5f, in[1] * 0.5f);
+      reverb.process(in[0], in[1]);
 
       out[0] = in[0] * dry + static_cast<float>(reverb.getLeftOutput()) * wet;
       out[1] = in[1] * dry + static_cast<float>(reverb.getRightOutput()) * wet;
@@ -221,43 +198,18 @@ public:
   }
 
 private:
-  struct ModeTuning
-  {
-    // MODE does not replace normal controls; it offsets the "character" voicing.
-    bool diffuse_input;
-    float input_low_pitch;
-    float low_cut_pitch;
-    float mod_shape;
-    bool force_freeze;
-  };
-
   static float clampf(float v, float lo, float hi)
   {
     return v < lo ? lo : (v > hi ? hi : v);
   }
 
-  static ModeTuning getModeTuning(uint32_t mode)
-  {
-    switch (mode)
-    {
-    case MODE_BYPASS:
-      // Neutral voicing: avoid extra character offsets and forced states.
-      return {true, 0.0f, 0.0f, 0.50f, false};
-    case MODE_NORM:
-      return {true, 0.0f, 2.0f, 0.50f, false};
-    case MODE_WASH:
-      return {true, 0.0f, 1.0f, 0.35f, false};
-    case MODE_DARK:
-      return {true, 0.0f, 0.5f, 0.70f, false};
-    case MODE_FREEZE:
-    default:
-      return {true, 0.0f, 0.0f, 0.50f, true};
-    }
-  }
-
   void updateEngineParams(const Params &p)
   {
-    const ModeTuning m = getModeTuning(p.mode);
+    // Fixed neutral voicing now that MODE has been removed.
+    constexpr bool diffuse_input = true;
+    constexpr float input_low_pitch = 0.0f;
+    constexpr float low_cut_pitch = 0.0f;
+    constexpr float mod_shape = 0.50f;
 
     // Plateau-like pre-delay domain: ms from UI, seconds for Dattorro.
     const float pre_delay_sec = clampf(p.predelay_ms * 0.001f, 0.f, 0.5f);
@@ -276,22 +228,22 @@ private:
     mod_rate = mod_rate * mod_rate;
     mod_rate = mod_rate * 99.f + 1.f;
 
-    reverb.enableInputDiffusion(m.diffuse_input);
-    reverb.setInputFilterLowCutoffPitch(m.input_low_pitch);
+    reverb.enableInputDiffusion(diffuse_input);
+    reverb.setInputFilterLowCutoffPitch(input_low_pitch);
     reverb.setInputFilterHighCutoffPitch(10.0f);
 
     reverb.setTimeScale(size);
     reverb.setPreDelay(pre_delay_sec);
     reverb.setDecay(decay);
     reverb.setTankDiffusion(clampf(p.diffusion, 0.f, 10.f));
-    reverb.setTankFilterLowCutFrequency(m.low_cut_pitch);
+    reverb.setTankFilterLowCutFrequency(low_cut_pitch);
     reverb.setTankFilterHighCutFrequency(clampf(p.high_cut_pitch, 0.f, 10.f));
     reverb.setTankModDepth(clampf(p.mod_depth, 0.f, 16.f));
     reverb.setTankModSpeed(mod_rate);
-    reverb.setTankModShape(m.mod_shape);
+    reverb.setTankModShape(mod_shape);
 
-    // MODE_FREEZE always wins; otherwise respect FRZ toggle.
-    reverb.freeze(m.force_freeze || p.freeze);
+    // Freeze is controlled by the dedicated FRZ toggle.
+    reverb.freeze(p.freeze);
   }
 
   Dattorro reverb;

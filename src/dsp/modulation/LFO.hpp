@@ -6,22 +6,22 @@
 
 class LFO {
 public:
-    double output = 0.0;
-    double phase = 0.0;
+    float output = 0.0f;
+    float phase = 0.0f;
 
     LFO() {
-        _frequency = 1.0;
-        _sampleRate = 44100.0;
-        _stepSize = _frequency * (double)kTableLength / _sampleRate;
+        _frequency = 1.0f;
+        _sampleRate = 44100.0f;
+        _stepSize = _frequency * (float)kTableLength / _sampleRate;
         for(auto i = 0; i < kTableLength; ++i) {
-            _sine.push_back(sin(2.0 * M_PI * (double)i / (double)kTableLength));
+            _sine.push_back(std::sin(2.0f * (float)M_PI * (float)i / (float)kTableLength));
         }
-        _phasor = 0.0;
+        _phasor = 0.0f;
     }
 
-    double process() {
+    float process() {
         _plusPhase = _phasor + phase * kTableLength;
-        if(_plusPhase < 0.0) {
+        if(_plusPhase < 0.0f) {
             _plusPhase += kTableLength;
         }
         else if(_plusPhase >= kTableLength) {
@@ -30,9 +30,9 @@ public:
 
         _a = (long)_plusPhase;
         _frac = _plusPhase - _a;
-        _b = _a + 1.0;
+        _b = _a + 1;
         _b %= kTableLength;
-        output = _sine[_a] * (1.0 - _frac) + _sine[_b] * _frac;
+        output = _sine[_a] * (1.0f - _frac) + _sine[_b] * _frac;
 
         _phasor += _stepSize;
         if(_phasor >= kTableLength) {
@@ -41,45 +41,45 @@ public:
         return output;
     }
 
-    void setFrequency(double frequency) {
+    void setFrequency(float frequency) {
         _frequency = frequency;
         calcStepSize();
     }
-    void setSamplerate(double sampleRate) {
+    void setSamplerate(float sampleRate) {
         _sampleRate = sampleRate;
         calcStepSize();
     }
 private:
-    double _frequency;
-    double _sampleRate;
-    double _stepSize;
-    double _phasor;
-    double _plusPhase;
+    float _frequency;
+    float _sampleRate;
+    float _stepSize;
+    float _phasor;
+    float _plusPhase;
     long _a, _b;
-    double _frac;
+    float _frac;
     const long kTableLength = 4096;
-    std::vector<double> _sine;
+    std::vector<float> _sine;
 
     void calcStepSize() {
-        _stepSize = _frequency * (double)kTableLength / _sampleRate;
+        _stepSize = _frequency * (float)kTableLength / _sampleRate;
     }
 };
 
 class TriSawLFO {
 public:
-    TriSawLFO(double sampleRate = 44100.0, double frequency = 1.0) {
-        phase = 0.0;
-        _output = 0.0;
+    TriSawLFO(float sampleRate = 44100.0f, float frequency = 1.0f) {
+        phase = 0.0f;
+        _output = 0.0f;
         _sampleRate = sampleRate;
-        _step = 0.0;
+        _step = 0.0f;
         _rising = true;
         setFrequency(frequency);
-        setRevPoint(0.5);
+        setRevPoint(0.5f);
     }
 
-    double process() {
-        if(_step > 1.0) {
-            _step -= 1.0;
+    float process() {
+        if(_step > 1.0f) {
+            _step -= 1.0f;
             _rising = true;
         }
 
@@ -95,12 +95,12 @@ public:
         }
 
         _step += _stepSize;
-        _output *= 2.0;
-        _output -= 1.0;
+        _output *= 2.0f;
+        _output -= 1.0f;
         return _output;
     }
 
-    void setFrequency(double frequency) {
+    void setFrequency(float frequency) {
         if (frequency == _frequency) {
             return;
         }
@@ -108,7 +108,7 @@ public:
         calcStepSize();
     }
 
-    void setRevPoint(double revPoint) {
+    void setRevPoint(float revPoint) {
         _revPoint = revPoint;
         if(_revPoint < 0.0001) {
             _revPoint = 0.0001;
@@ -117,30 +117,30 @@ public:
             _revPoint = 0.999;
         }
 
-        _riseRate = 1.0 / _revPoint;
-        _fallRate = -1.0 / (1.0 - _revPoint);
+        _riseRate = 1.0f / _revPoint;
+        _fallRate = -1.0f / (1.0f - _revPoint);
     }
 
-    void setSamplerate(double sampleRate) {
+    void setSamplerate(float sampleRate) {
         _sampleRate = sampleRate;
         calcStepSize();
     }
 
-    double getOutput() const {
+    float getOutput() const {
         return _output;
     }
 
-    double phase;
+    float phase;
 
 private:
-    double _output;
-    double _sampleRate;
-    double _frequency = 0.0;
-    double _revPoint;
-    double _riseRate;
-    double _fallRate;
-    double _step;
-    double _stepSize;
+    float _output;
+    float _sampleRate;
+    float _frequency = 0.0f;
+    float _revPoint;
+    float _riseRate;
+    float _fallRate;
+    float _step;
+    float _stepSize;
     bool _rising;
 
     void calcStepSize() {

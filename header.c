@@ -50,7 +50,7 @@ const __unit_header unit_header_t unit_header = {
     .unit_id = 0x0U,                                       // ID for this unit. Scoped within the context of a given dev_id.
     .version = 0x00010000U,                                // This unit's version: major.minor.patch (major<<16 minor<<8 patch).
     .name = "gorge",                                       // Name for this unit, will be displayed on device
-    .num_params = 10,                                      // Number of valid parameter descriptors. (max. 11)
+    .num_params = 9,                                       // Number of valid parameter descriptors. (max. 11)
     
     .params = {
         // Format: min, max, center (unused), default, type, frac. bits, frac. mode, <reserved>, name
@@ -69,20 +69,17 @@ const __unit_header unit_header_t unit_header = {
         {-1000, 1000, 0, 0, k_unit_param_type_drywet, 1, 1, 0, {"MIX"}},
 
         // Edit menu parameters
-        // MODE applies a "character" layer on top of the continuous controls below.
-        // 0=BYPASS, 1=NORM, 2=WASH, 3=DARK, 4=FREEZ
-        {0, 4, 0, 0, k_unit_param_type_strings, 0, 0, 0, {"MODE"}},
+        // Dedicated freeze toggle.
+        {0, 1, 0, 0, k_unit_param_type_onoff, 0, 0, 0, {"FRZ"}},
+        // Mod depth uses 1 decimal fixed-point (0..16.0 internal domain).
+        {0, 160, 0, 60, k_unit_param_type_none, 1, 1, 0, {"MDEP"}},
+        // Mod rate as percentage, then shaped nonlinearly in DSP.
+        {0, 100, 0, 20, k_unit_param_type_percent, 0, 0, 0, {"MRAT"}},
         // Pre-delay in milliseconds.
         {0, 500, 0, 40, k_unit_param_type_msec, 0, 0, 0, {"PDEL"}},
         // Diffusion as percentage, internally mapped to 0..10.
         {0, 100, 0, 70, k_unit_param_type_percent, 0, 0, 0, {"DIF"}},
         // High-cut pitch control mapped to Dattorro's 0..10 pitch domain.
         {0, 100, 0, 85, k_unit_param_type_none, 0, 0, 0, {"HCUT"}},
-        // Mod depth uses 1 decimal fixed-point (0..16.0 internal domain).
-        {0, 160, 0, 60, k_unit_param_type_none, 1, 1, 0, {"MDEP"}},
-        // Mod rate as percentage, then shaped nonlinearly in DSP.
-        {0, 100, 0, 20, k_unit_param_type_percent, 0, 0, 0, {"MRAT"}},
-        // Manual freeze toggle in addition to MODE=FREEZ hard-freeze.
-        {0, 1, 0, 0, k_unit_param_type_onoff, 0, 0, 0, {"FRZ"}},
         {0, 0, 0, 0, k_unit_param_type_none, 0, 0, 0, {""}}},
 };

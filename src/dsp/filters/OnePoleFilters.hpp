@@ -3,14 +3,14 @@
 #include <stdio.h>
 #include <cstdint>
 
-#define _1_FACT_2 0.5
-#define _1_FACT_3 0.1666666667
-#define _1_FACT_4 0.04166666667
-#define _1_FACT_5 0.008333333333
+#define _1_FACT_2 0.5f
+#define _1_FACT_3 0.1666666667f
+#define _1_FACT_4 0.04166666667f
+#define _1_FACT_5 0.008333333333f
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
-#define _2M_PI (2.0 * M_PI)
+#define _2M_PI (2.0f * M_PI)
 
 template<typename T>
 T fastexp(T x) {
@@ -24,63 +24,63 @@ T fastexp(T x) {
 
 class OnePoleLPFilter {
 public:
-    OnePoleLPFilter(double cutoffFreq = 22049.0, double initSampleRate = 44100.0);
-    double process();
+    OnePoleLPFilter(float cutoffFreq = 22049.0f, float initSampleRate = 44100.0f);
+    float process();
     void clear();
-    void setCutoffFreq(double cutoffFreq);
-    void setSampleRate(double sampleRate);
-    double getMaxCutoffFreq() const;
-    double input = 0.0;
-    double output = 0.0;
+    void setCutoffFreq(float cutoffFreq);
+    void setSampleRate(float sampleRate);
+    float getMaxCutoffFreq() const;
+    float input = 0.0f;
+    float output = 0.0f;
 private:
-    double _sampleRate = 44100.0;
-    double _1_sampleRate = 1.0 / _sampleRate;
-    double _cutoffFreq = 0.0;
-    double _maxCutoffFreq = _sampleRate / 2.0;
-    double _a = 0.0;
-    double _b = 0.0;
-    double _z = 0.0;
+    float _sampleRate = 44100.0f;
+    float _1_sampleRate = 1.0f / _sampleRate;
+    float _cutoffFreq = 0.0f;
+    float _maxCutoffFreq = _sampleRate / 2.0f;
+    float _a = 0.0f;
+    float _b = 0.0f;
+    float _z = 0.0f;
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 class OnePoleHPFilter {
 public:
-    OnePoleHPFilter(double initCutoffFreq = 10.0, double initSampleRate = 44100.0);
-    double process();
+    OnePoleHPFilter(float initCutoffFreq = 10.0f, float initSampleRate = 44100.0f);
+    float process();
     void clear();
-    void setCutoffFreq(double cutoffFreq);
-    void setSampleRate(double sampleRate);
-    double input = 0.0;
-    double output = 0.0;
+    void setCutoffFreq(float cutoffFreq);
+    void setSampleRate(float sampleRate);
+    float input = 0.0f;
+    float output = 0.0f;
 private:
-    double _sampleRate = 0.0;
-    double _1_sampleRate = 0.0;
-    double _cutoffFreq = 0.0;
-    double _maxCutoffFreq = _sampleRate / 2.0 - 1.0;
-    double _y0 = 0.0;
-    double _y1 = 0.0;
-    double _x0 = 0.0;
-    double _x1 = 0.0;
-    double _a0 = 0.0;
-    double _a1 = 0.0;
-    double _b1 = 0.0;
+    float _sampleRate = 0.0f;
+    float _1_sampleRate = 0.0f;
+    float _cutoffFreq = 0.0f;
+    float _maxCutoffFreq = _sampleRate / 2.0f - 1.0f;
+    float _y0 = 0.0f;
+    float _y1 = 0.0f;
+    float _x0 = 0.0f;
+    float _x1 = 0.0f;
+    float _a0 = 0.0f;
+    float _a1 = 0.0f;
+    float _b1 = 0.0f;
 };
 
 class DCBlocker {
 public:
     DCBlocker();
-    DCBlocker(double cutoffFreq);
-    double process(double input);
+    DCBlocker(float cutoffFreq);
+    float process(float input);
     void clear();
-    void setCutoffFreq(double cutoffFreq);
-    void setSampleRate(double sampleRate);
-    double getMaxCutoffFreq() const;
-    double output;
+    void setCutoffFreq(float cutoffFreq);
+    void setSampleRate(float sampleRate);
+    float getMaxCutoffFreq() const;
+    float output;
 private:
-    double _sampleRate;
-    double _cutoffFreq;
-    double _maxCutoffFreq;
-    double _b;
-    double _z;
+    float _sampleRate;
+    float _cutoffFreq;
+    float _maxCutoffFreq;
+    float _b;
+    float _z;
 };
