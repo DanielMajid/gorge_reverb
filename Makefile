@@ -1,4 +1,4 @@
-PROJECT ?= gorge
+PROJECT ?= Gorge
 MODULE ?= revfx
 VERSION ?= 1.0.0
 PROJECT_ROOT := $(CURDIR)
