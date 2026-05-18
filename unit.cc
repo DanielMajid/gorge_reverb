@@ -1,4 +1,3 @@
-
 /*
     BSD 3-Clause License
 
@@ -46,7 +45,7 @@
 
 static Reverb s_processor_instance; // actual instance of custom delay object
 
-static int16_t cached_values[UNIT_REVFX_MAX_PARAM_COUNT]; // cached parameter values passed from hardware
+static int32_t cached_values[UNIT_REVFX_MAX_PARAM_COUNT]; // cached parameter values passed from hardware
 
 // ---- Callbacks exposed to runtime ----------------------------------------------
 extern "C" {
@@ -56,46 +55,31 @@ __unit_callback __attribute__((visibility("default"))) int8_t unit_init(const un
   if (!desc)
     return k_unit_err_undef;
 
-  // Note: make sure the unit is being loaded to the correct platform/module target
   if (desc->target != unit_header.target)
     return k_unit_err_target;
 
-  // Note: check API compatibility with the one this unit was built against
   if (!UNIT_API_IS_COMPAT(desc->api))
     return k_unit_err_api_version;
 
-  // Check compatibility of samplerate with unit
-  if (desc->samplerate != s_processor_instance.getSampleRate())
+  if (desc->samplerate != 48000) {
     return k_unit_err_samplerate;
+  }
 
-  // Check compatibility of frame geometry
-  if (desc->input_channels != 2 || desc->output_channels != 2) // should be stereo input/output
+  if (desc->input_channels != 2 || desc->output_channels != 2)
     return k_unit_err_geometry;
 
-  // If SDRAM buffers are required they must be allocated here
   if (!desc->hooks.sdram_alloc)
     return k_unit_err_memory;
 
-  if (s_processor_instance.getBufferSize() > 0)
-  {
-    float *allocated_buffer_ = (float *)desc->hooks.sdram_alloc(s_processor_instance.getBufferSize() * sizeof(float));
-    if (!allocated_buffer_)
-      return k_unit_err_memory;
+  float *allocated_buffer_ = (float *)desc->hooks.sdram_alloc(s_processor_instance.getBufferSize() * sizeof(float));
+  if (!allocated_buffer_)
+    return k_unit_err_memory;
 
-    // clear buffer
-    std::fill(allocated_buffer_, allocated_buffer_ + s_processor_instance.getBufferSize(), 0.f);
-    s_processor_instance.init(allocated_buffer_);
-    // Reverb init can fail if internal delay objects cannot bind SDRAM slices.
-    if (!s_processor_instance.isReady())
-      return k_unit_err_memory;
-  }
-  else
-  {
-    s_processor_instance.init(nullptr);
-    // Keep behavior explicit if implementation ever switches to no-buffer mode.
-    if (!s_processor_instance.isReady())
-      return k_unit_err_memory;
-  }
+  std::fill(allocated_buffer_, allocated_buffer_ + s_processor_instance.getBufferSize(), 0.f);
+  s_processor_instance.init(allocated_buffer_);
+
+  if (!s_processor_instance.isReady())
+    return k_unit_err_memory;
 
   // initialize cached parameters to defaults
   for (int id = 0; id < UNIT_REVFX_MAX_PARAM_COUNT; ++id)
@@ -141,7 +125,7 @@ __unit_callback __attribute__((visibility("default"))) void unit_set_param_value
   value = clipminmaxi32(unit_header.params[id].min, value, unit_header.params[id].max);
 
   // cache value for unit_get_param_value(id)
-  cached_values[id] = static_cast<int16_t>(value);
+  cached_values[id] = value;
 
   s_processor_instance.setParameter(id, value);
 }

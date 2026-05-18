@@ -83,3 +83,14 @@ const __unit_header unit_header_t unit_header = {
         {0, 100, 0, 85, k_unit_param_type_none, 0, 0, 0, {"HIGHCUT"}},
         {0, 0, 0, 0, k_unit_param_type_none, 0, 0, 0, {""}}},
 };
+
+// Parameters:
+// SIZE: Controls the size of the reverb space. Range: 0-1023.
+// DECY: Controls the decay time of the reverb. Range: 0-1023.
+// MIX: Controls the wet/dry mix. Range: -1000 to 1000.
+// FREEZE: Toggles the freeze effect. Range: 0-1.
+// MOD DEPTH: Modulation depth. Range: 0-160.
+// MOD RATE: Modulation rate as a percentage. Range: 0-100.
+// PREDELAY: Pre-delay time in milliseconds. Range: 0-500.
+// DIFFUSION: Diffusion percentage. Range: 0-100.
+// HIGHCUT: High-cut filter control. Range: 0-100.
