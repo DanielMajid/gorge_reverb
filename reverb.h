@@ -42,6 +42,7 @@
 #include "processor.h"
 #include "unit_revfx.h"
 #include "Dattorro.hpp"
+#include <cstdint> // Provides uint32_t for SDK-facing buffer-size method signatures.
 
 class Reverb : public Processor
 {
@@ -58,6 +59,7 @@ public:
     FREEZE,
     MOD_DEPTH,
     MOD_RATE,
+    MOD_SHAPE,
     PREDELAY,
     DIFFUSION,
     HIGH_CUT,
@@ -76,6 +78,7 @@ public:
     float high_cut_pitch;
     float mod_depth;
     float mod_rate;
+    float mod_shape;
     bool freeze;
 
     void reset()
@@ -88,6 +91,7 @@ public:
       high_cut_pitch = 8.5f;
       mod_depth = 6.f;
       mod_rate = 0.2f;
+      mod_shape = 0.f;
       freeze = false;
     }
 
@@ -117,11 +121,18 @@ public:
       break;
 
     case MOD_DEPTH:
+      // Header domain is 0..160, DSP domain is 0.0..16.0.
       params_.mod_depth = static_cast<float>(value) * 0.1f;
       break;
 
     case MOD_RATE:
+      // Header domain is 0..100 percent-like control domain.
       params_.mod_rate = static_cast<float>(value) * 0.01f;
+      break;
+
+    case MOD_SHAPE:
+      // Header domain is -100..100 centered around symmetric triangle shape.
+      params_.mod_shape = static_cast<float>(value) * 0.01f;
       break;
 
     case PREDELAY:
@@ -129,10 +140,12 @@ public:
       break;
 
     case DIFFUSION:
+      // Header domain is 0..100, Dattorro diffusion uses 0.0..10.0.
       params_.diffusion = static_cast<float>(value) * 0.1f;
       break;
 
     case HIGH_CUT:
+      // Header domain is 0..100, tank high-cut pitch domain is 0.0..10.0.
       params_.high_cut_pitch = static_cast<float>(value) * 0.1f;
       break;
 
@@ -230,7 +243,6 @@ private:
     constexpr bool diffuse_input = true;
     constexpr float input_low_pitch = 0.0f;
     constexpr float low_cut_pitch = 0.0f;
-    constexpr float mod_shape = 0.50f;
 
     // Plateau-like pre-delay domain: ms from UI, seconds for Dattorro.
     const float pre_delay_sec = clampf(p.predelay_ms * 0.001f, 0.f, 0.5f);
@@ -248,6 +260,9 @@ private:
     float mod_rate = clampf(p.mod_rate, 0.f, 1.f);
     mod_rate = mod_rate * mod_rate;
     mod_rate = mod_rate * 99.f + 1.f;
+
+    // Plateau-style mod shape: centered at 0.5, then clamped to safe TriSaw revPoint bounds.
+    const float mod_shape = clampf(0.5f + 0.499f * clampf(p.mod_shape, -1.f, 1.f), 0.001f, 0.999f);
 
     reverb.enableInputDiffusion(diffuse_input);
     reverb.setInputFilterLowCutoffPitch(input_low_pitch);

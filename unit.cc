@@ -42,6 +42,7 @@
 #include "unit_revfx.h"     // base definitions for revfx units
 #include "utils/int_math.h" // clipminmaxi32()
 #include <algorithm>        // std::fill
+#include <cstdint>          // Provides uint32_t/uint8_t used by runtime callback signatures.
 
 static Reverb s_processor_instance; // actual instance of custom delay object
 
@@ -52,6 +53,7 @@ extern "C" {
 
 __unit_callback __attribute__((visibility("default"))) int8_t unit_init(const unit_runtime_desc_t *desc)
 {
+  // Validate runtime contract first so we fail early with a clear reason.
   if (!desc)
     return k_unit_err_undef;
 
@@ -71,10 +73,12 @@ __unit_callback __attribute__((visibility("default"))) int8_t unit_init(const un
   if (!desc->hooks.sdram_alloc)
     return k_unit_err_memory;
 
+  // All delay lines live in SDRAM from the runtime allocator.
   float *allocated_buffer_ = (float *)desc->hooks.sdram_alloc(s_processor_instance.getBufferSize() * sizeof(float));
   if (!allocated_buffer_)
     return k_unit_err_memory;
 
+  // Clear the full SDRAM block so stale memory cannot leak into first render.
   std::fill(allocated_buffer_, allocated_buffer_ + s_processor_instance.getBufferSize(), 0.f);
   s_processor_instance.init(allocated_buffer_);
 
@@ -112,6 +116,7 @@ __unit_callback __attribute__((visibility("default"))) void unit_suspend()
 
 __unit_callback __attribute__((visibility("default"))) void unit_render(const float *in, float *out, uint32_t frames)
 {
+  // Reverb::process handles dry-fallback itself if init failed.
   s_processor_instance.process(in, out, frames);
 }
 
@@ -121,7 +126,7 @@ __unit_callback __attribute__((visibility("default"))) void unit_set_param_value
   if (id >= UNIT_REVFX_MAX_PARAM_COUNT)
     return;
 
-  // clip to valid range as defined in header
+  // Clamp to descriptor limits so DSP always sees valid domains.
   value = clipminmaxi32(unit_header.params[id].min, value, unit_header.params[id].max);
 
   // cache value for unit_get_param_value(id)
@@ -146,7 +151,8 @@ __unit_callback __attribute__((visibility("default"))) const char *unit_get_para
   if (id >= UNIT_REVFX_MAX_PARAM_COUNT)
     return nullptr;
 
-  value = clipminmaxi32(unit_header.params[id].min, value, unit_header.params[id].max); // just in case
+  // Mirror set-path clamping so string formatting always sees valid ranges.
+  value = clipminmaxi32(unit_header.params[id].min, value, unit_header.params[id].max);
   return s_processor_instance.getParameterStrValue(id, value);
 }
 

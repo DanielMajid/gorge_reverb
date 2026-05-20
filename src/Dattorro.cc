@@ -327,6 +327,7 @@ Dattorro::Dattorro(const float initMaxSampleRate,
 void Dattorro::process(float leftInput, float rightInput) {
     constexpr float kStereoSideInjection = 0.5f;
 
+    // Input conditioning: remove DC first, then apply user low/high-cut tone shaping.
     leftInputDCBlock.input = leftInput;
     rightInputDCBlock.input = rightInput;
     inputLpf.setCutoffFreq(inputHighCut);
@@ -337,6 +338,7 @@ void Dattorro::process(float leftInput, float rightInput) {
     const float mid = 0.5f * (leftDc + rightDc);
     const float side = 0.5f * (leftDc - rightDc);
 
+    // Build the excitation signal that feeds the tank.
     inputLpf.input = mid;
     inputHpf.input = inputLpf.process();
     inputHpf.process();
@@ -348,6 +350,7 @@ void Dattorro::process(float leftInput, float rightInput) {
     inApf4.input = inApf3.process();
     tankFeed = preDelay.output * (1.0f - diffuseInput) + inApf4.process() * diffuseInput;
 
+    // Inject side component with opposite polarity to maintain stereo width in the tail.
     const float tankLeftIn = tankFeed + side * kStereoSideInjection;
     const float tankRightIn = tankFeed - side * kStereoSideInjection;
     tank.process(tankLeftIn, tankRightIn, &leftOut, &rightOut);
@@ -470,6 +473,7 @@ bool Dattorro::setBuffer(float *buffer, size_t bufferSize) {
         if (remaining < len) {
             return false;
         }
+        // Assign a contiguous slice, then advance the shared cursor.
         delay.setMemory(cursor, len);
         cursor += len;
         remaining -= len;

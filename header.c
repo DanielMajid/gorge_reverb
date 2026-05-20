@@ -50,7 +50,7 @@ const __unit_header unit_header_t unit_header = {
     .unit_id = 0x00000002U,                                       // ID for this unit. Scoped within the context of a given dev_id.
     .version = 0x00010000U,                                // This unit's version: major.minor.patch (major<<16 minor<<8 patch).
     .name = "Gorge",                                       // Name for this unit, will be displayed on device
-    .num_params = 9,                                       // Number of valid parameter descriptors. (max. 11)
+    .num_params = 10,                                      // Number of valid parameter descriptors. (max. 11)
     
     .params = {
         // Format: min, max, center (unused), default, type, frac. bits, frac. mode, <reserved>, name
@@ -75,6 +75,8 @@ const __unit_header unit_header_t unit_header = {
         {0, 160, 0, 60, k_unit_param_type_none, 1, 1, 0, {"MOD DEPTH"}},
         // Mod rate as percentage, then shaped nonlinearly in DSP.
         {0, 100, 0, 20, k_unit_param_type_percent, 0, 0, 0, {"MOD RATE"}},
+        // Mod shape is bipolar around center. Negative shortens rise, positive shortens fall.
+        {-100, 100, 0, 0, k_unit_param_type_none, 0, 0, 0, {"MOD SHAPE"}},
         // Pre-delay in milliseconds.
         {0, 500, 0, 40, k_unit_param_type_msec, 0, 0, 0, {"PREDELAY"}},
         // Diffusion as percentage, internally mapped to 0..10.
@@ -91,6 +93,7 @@ const __unit_header unit_header_t unit_header = {
 // FREEZE: Toggles the freeze effect. Range: 0-1.
 // MOD DEPTH: Modulation depth. Range: 0-160.
 // MOD RATE: Modulation rate as a percentage. Range: 0-100.
+// MOD SHAPE: Triangle LFO shape tilt around center. Range: -100 to 100.
 // PREDELAY: Pre-delay time in milliseconds. Range: 0-500.
 // DIFFUSION: Diffusion percentage. Range: 0-100.
 // HIGHCUT: High-cut filter control. Range: 0-100.
