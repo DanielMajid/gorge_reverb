@@ -33,7 +33,7 @@ Ported by Daniel Majid Mirzakhani
 
     Download this repo
 
-    git clone --recurse-submodules https://github.com/DanielMajid/Lirah-1.git
+    git clone --recurse-submodules https://github.com/DanielMajid/gorge_reverb.git
 
 - Download the ARM GCC toolchain
 
