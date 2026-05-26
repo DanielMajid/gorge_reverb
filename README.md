@@ -33,7 +33,11 @@ Ported by Daniel Majid Mirzakhani
 
     Download this repo
 
+<<<<<<< HEAD
     git clone --recurse-submodules https://github.com/DanielMajid/gorge_reverb.git
+=======
+    git clone --recurse-submodules https://github.com/DanielMajid/Gorge_reverb.git
+>>>>>>> 9646246 (stability changes made for SDRAM handling on init and teardown.)
 
 - Download the ARM GCC toolchain
 

@@ -45,6 +45,8 @@
 #include <cstdint>          // Provides uint32_t/uint8_t used by runtime callback signatures.
 
 static Reverb s_processor_instance; // actual instance of custom delay object
+static float *s_allocated_buffer = nullptr;
+static unit_runtime_sdram_free_ptr s_sdram_free = nullptr;
 
 static int32_t cached_values[UNIT_REVFX_MAX_PARAM_COUNT]; // cached parameter values passed from hardware
 
@@ -73,17 +75,28 @@ __unit_callback __attribute__((visibility("default"))) int8_t unit_init(const un
   if (!desc->hooks.sdram_alloc)
     return k_unit_err_memory;
 
+  s_sdram_free = desc->hooks.sdram_free;
+
   // All delay lines live in SDRAM from the runtime allocator.
   float *allocated_buffer_ = (float *)desc->hooks.sdram_alloc(s_processor_instance.getBufferSize() * sizeof(float));
   if (!allocated_buffer_)
     return k_unit_err_memory;
+
+  s_allocated_buffer = allocated_buffer_;
 
   // Clear the full SDRAM block so stale memory cannot leak into first render.
   std::fill(allocated_buffer_, allocated_buffer_ + s_processor_instance.getBufferSize(), 0.f);
   s_processor_instance.init(allocated_buffer_);
 
   if (!s_processor_instance.isReady())
+  {
+    if (s_sdram_free && s_allocated_buffer)
+    {
+      s_sdram_free(reinterpret_cast<const uint8_t *>(s_allocated_buffer));
+    }
+    s_allocated_buffer = nullptr;
     return k_unit_err_memory;
+  }
 
   // initialize cached parameters to defaults
   for (int id = 0; id < UNIT_REVFX_MAX_PARAM_COUNT; ++id)
@@ -97,6 +110,14 @@ __unit_callback __attribute__((visibility("default"))) int8_t unit_init(const un
 __unit_callback __attribute__((visibility("default"))) void unit_teardown()
 {
   s_processor_instance.teardown();
+
+  if (s_sdram_free && s_allocated_buffer)
+  {
+    s_sdram_free(reinterpret_cast<const uint8_t *>(s_allocated_buffer));
+  }
+
+  s_allocated_buffer = nullptr;
+  s_sdram_free = nullptr;
 }
 
 __unit_callback __attribute__((visibility("default"))) void unit_reset()
