@@ -59,30 +59,30 @@ const __unit_header unit_header_t unit_header = {
 
         // Fixed/direct UI parameters (front panel)
         // A knob
-        {0, 1023, 0, 512, k_unit_param_type_none, 1, 0, 0, {"SIZE"}},
+        {0, 1023, 0, 460, k_unit_param_type_none, 1, 0, 0, {"SIZE"}},
 
         // B knob
-        {0, 1023, 0, 512, k_unit_param_type_none, 1, 0, 0, {"DECY"}},
+        {0, 1023, 0, 470, k_unit_param_type_none, 1, 0, 0, {"DECY"}},
 
         // DELAY switch + B knob
         // Keep native drywet type so host/websim presents bipolar wet/dry UI.
-        {-1000, 1000, 0, -250, k_unit_param_type_drywet, 1, 1, 0, {"MIX"}},
+        {-1000, 1000, 0, -300, k_unit_param_type_drywet, 1, 1, 0, {"MIX"}},
 
         // Edit menu parameters
         // Dedicated freeze toggle.
         {0, 1, 0, 0, k_unit_param_type_onoff, 0, 0, 0, {"FREEZE"}},
         // Mod depth uses 1 decimal fixed-point (0..16.0 internal domain).
-        {0, 160, 0, 60, k_unit_param_type_none, 1, 1, 0, {"MOD DEPTH"}},
+        {0, 160, 0, 25, k_unit_param_type_none, 1, 1, 0, {"MOD DEPTH"}},
         // Mod rate as percentage, then shaped nonlinearly in DSP.
-        {0, 100, 0, 20, k_unit_param_type_percent, 0, 0, 0, {"MOD RATE"}},
+        {0, 100, 0, 12, k_unit_param_type_percent, 0, 0, 0, {"MOD RATE"}},
         // Mod shape is bipolar around center. Negative shortens rise, positive shortens fall.
         {-100, 100, 0, 0, k_unit_param_type_none, 0, 0, 0, {"MOD SHAPE"}},
         // Pre-delay in milliseconds.
-        {0, 500, 0, 40, k_unit_param_type_msec, 0, 0, 0, {"PREDELAY"}},
+        {0, 500, 0, 25, k_unit_param_type_msec, 0, 0, 0, {"PREDELAY"}},
         // Diffusion as percentage, internally mapped to 0..10.
-        {0, 100, 0, 70, k_unit_param_type_percent, 0, 0, 0, {"DIFFUSION"}},
+        {0, 100, 0, 75, k_unit_param_type_percent, 0, 0, 0, {"DIFFUSION"}},
         // High-cut pitch control mapped to Dattorro's 0..10 pitch domain.
-        {0, 100, 0, 85, k_unit_param_type_none, 0, 0, 0, {"HIGHCUT"}},
+        {0, 100, 0, 72, k_unit_param_type_none, 0, 0, 0, {"HIGHCUT"}},
         {0, 0, 0, 0, k_unit_param_type_none, 0, 0, 0, {""}}},
 };
 

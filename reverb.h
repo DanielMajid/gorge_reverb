@@ -83,14 +83,14 @@ public:
 
     void reset()
     {
-      size = 0.5f;
-      decay = 0.5f;
-      mix = 0.f;
-      predelay_ms = 40.f;
-      diffusion = 7.f;
-      high_cut_pitch = 8.5f;
-      mod_depth = 6.f;
-      mod_rate = 0.2f;
+      size = 460.f / 1023.f;
+      decay = 470.f / 1023.f;
+      mix = -0.3f;
+      predelay_ms = 25.f;
+      diffusion = 7.5f;
+      high_cut_pitch = 7.2f;
+      mod_depth = 2.5f;
+      mod_rate = 0.12f;
       mod_shape = 0.f;
       freeze = false;
     }
