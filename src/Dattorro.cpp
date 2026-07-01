@@ -1,3 +1,7 @@
+// Gorge Reverb / Dattorro plate implementation.
+// Modified by Daniel Majid Mirzakhani.
+// Released under the GNU General Public License v3.0 or later.
+
 #include "Dattorro.hpp"
 #include <cassert>
 #include <algorithm>

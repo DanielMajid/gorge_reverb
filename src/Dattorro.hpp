@@ -1,5 +1,8 @@
 //
-// This plate reverb is based upon Jon Dattorro's 1997 reverb algorithm.
+// Gorge Reverb / Dattorro plate implementation.
+// Based on Jon Dattorro's 1997 reverb algorithm and adapted for this project.
+// Modified by Daniel Majid Mirzakhani.
+// Released under the GNU General Public License v3.0 or later.
 //
 
 #pragma once

@@ -62,9 +62,9 @@ package: install
 	@echo Packaging $(UNIT_FILE) -\> $(PACKAGE)
 	@rm -f "$(PACKAGE)"
 	@if [ -f src/credits.txt ]; then \
-	  zip -q9 "$(PACKAGE)" "$(UNIT_FILE)" src/credits.txt; \
+	  zip -q9 "$(PACKAGE)" "$(UNIT_FILE)" README.md LICENSE.md src/credits.txt; \
 	else \
-	  zip -q9 "$(PACKAGE)" "$(UNIT_FILE)"; \
+	  zip -q9 "$(PACKAGE)" "$(UNIT_FILE)" README.md LICENSE.md; \
 	fi
 	@echo Done
 

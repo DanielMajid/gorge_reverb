@@ -28,27 +28,34 @@ Ported by Daniel Majid Mirzakhani
 
 ## To build this project
 
-- Clone this repo 
-    In desired directory:
+Clone this repo in your desired directory:
 
-    Download this repo
+```sh
+git clone --recurse-submodules https://github.com/DanielMajid/gorge_reverb.git
+```
 
-<<<<<<< HEAD
-    git clone --recurse-submodules https://github.com/DanielMajid/gorge_reverb.git
-=======
-    git clone --recurse-submodules https://github.com/DanielMajid/Gorge_reverb.git
->>>>>>> 9646246 (stability changes made for SDRAM handling on init and teardown.)
+Download the ARM GCC toolchain:
 
-- Download the ARM GCC toolchain
+```sh
+cd logue-sdk/tools/gcc/
+./get_gcc_osx.sh
+```
 
-    cd logue-sdk/tools/gcc/
-    ./get_gcc_osx.sh
-    Run Make command to build binary
+Build the unit:
 
-- Compile project
-    Run "make install"
-    Open Korg Kontrol Editor
+```sh
+make install
+```
 
-- Load Project
-    Drag .nts1mkiiunit file into the appropriate module category
-    Click sync
+Create a release package:
+
+```sh
+make package
+```
+
+Load the resulting `.nts1mkiiunit` file into Korg Kontrol Editor, then sync it to the device.
+
+## License
+
+This project is a port of Valley Audio's Plateau reverb and is released under the GNU General Public License v3.0 or later.
+See [LICENSE.md](LICENSE.md) for the distribution notice and `src/credits.txt` for bundled attribution details.
