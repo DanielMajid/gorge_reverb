@@ -105,40 +105,4 @@ void OnePoleHPFilter::setSampleRate(float sampleRate) {
     clear();
 }
 
-DCBlocker::DCBlocker() {
-    setSampleRate(44100.0f);
-    setCutoffFreq(20.f);
-    clear();
-}
 
-DCBlocker::DCBlocker(float cutoffFreq) {
-    setSampleRate(44100.0f);
-    setCutoffFreq(cutoffFreq);
-    clear();
-}
-
-float DCBlocker::process(float input) {
-    output = input - _z + _b * output;
-    _z = input;
-    return output;
-}
-
-void DCBlocker::clear() {
-    _z = 0.0f;
-    output = 0.0f;
-}
-
-void DCBlocker::setSampleRate(float sampleRate) {
-    _sampleRate = sampleRate;
-    _maxCutoffFreq = sampleRate / 2.0f;
-    setCutoffFreq(_cutoffFreq);
-}
-
-void DCBlocker::setCutoffFreq(float cutoffFreq) {
-    _cutoffFreq = cutoffFreq;
-    _b = 0.999f;
-}
-
-float DCBlocker::getMaxCutoffFreq() const {
-    return _maxCutoffFreq;
-}

@@ -1,6 +1,5 @@
 #pragma once
 #include <cmath>
-#include <stdio.h>
 #include <cstdint>
 
 #define _1_FACT_2 0.5f
@@ -67,20 +66,4 @@ private:
     float _b1 = 0.0f;
 };
 
-class DCBlocker {
-public:
-    DCBlocker();
-    DCBlocker(float cutoffFreq);
-    float process(float input);
-    void clear();
-    void setCutoffFreq(float cutoffFreq);
-    void setSampleRate(float sampleRate);
-    float getMaxCutoffFreq() const;
-    float output;
-private:
-    float _sampleRate;
-    float _cutoffFreq;
-    float _maxCutoffFreq;
-    float _b;
-    float _z;
-};
+
