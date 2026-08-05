@@ -63,9 +63,11 @@ package: install
 	@rm -f "$(PACKAGE)"
 	@if [ -f src/credits.txt ]; then \
 	  zip -q9 "$(PACKAGE)" "$(UNIT_FILE)" README.md LICENSE.md src/credits.txt; \
-	else \
+	 else \
 	  zip -q9 "$(PACKAGE)" "$(UNIT_FILE)" README.md LICENSE.md; \
 	fi
+	@zip -q9 -r "$(PACKAGE)" Makefile config.mk header.c reverb.h unit.cc wasm.cc src/ \
+	  --exclude "src/credits.txt" --exclude "src/.DS_Store" --exclude "*/.DS_Store"
 	@echo Done
 
 wasm: check-sdk

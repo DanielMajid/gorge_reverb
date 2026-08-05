@@ -58,4 +58,4 @@ Load the resulting `.nts1mkiiunit` file into Korg Kontrol Editor, then sync it t
 ## License
 
 This project is a port of Valley Audio's Plateau reverb and is released under the GNU General Public License v3.0 or later.
-See [LICENSE.md](LICENSE.md) for the distribution notice and `src/credits.txt` for bundled attribution details.
+See [LICENSE.md](LICENSE.md) for the distribution notice
