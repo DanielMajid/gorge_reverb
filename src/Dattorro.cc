@@ -330,8 +330,6 @@ void Dattorro::process(float leftInput, float rightInput) {
     // Input conditioning: remove DC first, then apply user low/high-cut tone shaping.
     leftInputDCBlock.input = leftInput;
     rightInputDCBlock.input = rightInput;
-    inputLpf.setCutoffFreq(inputHighCut);
-    inputHpf.setCutoffFreq(inputLowCut);
 
     const float leftDc = leftInputDCBlock.process();
     const float rightDc = rightInputDCBlock.process();
@@ -407,11 +405,23 @@ void Dattorro::freeze(bool freezeFlag) {
 }
 
 void Dattorro::setInputFilterLowCutoffPitch(float pitch) {
-    inputLowCut = pitch_to_hz(pitch);
+    const float hz = pitch_to_hz(pitch);
+    if (hz == inputLowCut) {
+        return;
+    }
+
+    inputLowCut = hz;
+    inputHpf.setCutoffFreq(inputLowCut);
 }
 
 void Dattorro::setInputFilterHighCutoffPitch(float pitch) {
-    inputHighCut = pitch_to_hz(pitch);
+    const float hz = pitch_to_hz(pitch);
+    if (hz == inputHighCut) {
+        return;
+    }
+
+    inputHighCut = hz;
+    inputLpf.setCutoffFreq(inputHighCut);
 }
 
 void Dattorro::enableInputDiffusion(bool enable) {

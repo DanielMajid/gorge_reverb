@@ -72,11 +72,11 @@ const __unit_header unit_header_t unit_header = {
         // Dedicated freeze toggle.
         {0, 1, 0, 0, k_unit_param_type_onoff, 0, 0, 0, {"FREEZE"}},
         // Mod depth uses 1 decimal fixed-point (0..16.0 internal domain).
-        {0, 160, 0, 25, k_unit_param_type_none, 1, 1, 0, {"MOD DEPTH"}},
+        {0, 160, 0, 25, k_unit_param_type_none, 1, 1, 0, {"DEPTH MOD"}},
         // Mod rate as percentage, then shaped nonlinearly in DSP.
-        {0, 100, 0, 12, k_unit_param_type_percent, 0, 0, 0, {"MOD RATE"}},
+        {0, 100, 0, 12, k_unit_param_type_percent, 0, 0, 0, {"RATE MOD"}},
         // Mod shape is bipolar around center. Negative shortens rise, positive shortens fall.
-        {-100, 100, 0, 0, k_unit_param_type_none, 0, 0, 0, {"MOD SHAPE"}},
+        {-100, 100, 0, 0, k_unit_param_type_none, 0, 0, 0, {"SHAPE MOD"}},
         // Pre-delay in milliseconds.
         {0, 500, 0, 25, k_unit_param_type_msec, 0, 0, 0, {"PREDELAY"}},
         // Diffusion as percentage, internally mapped to 0..10.
@@ -91,9 +91,9 @@ const __unit_header unit_header_t unit_header = {
 // DECY: Controls the decay time of the reverb. Range: 0-1023.
 // MIX: Controls the wet/dry mix. Range: -1000 to 1000.
 // FREEZE: Toggles the freeze effect. Range: 0-1.
-// MOD DEPTH: Modulation depth. Range: 0-160.
-// MOD RATE: Modulation rate as a percentage. Range: 0-100.
-// MOD SHAPE: Triangle LFO shape tilt around center. Range: -100 to 100.
+// DEPTH MOD: Modulation depth. Range: 0-160.
+// RATE MOD: Modulation rate as a percentage. Range: 0-100.
+// SHAPE MOD: Triangle LFO shape tilt around center. Range: -100 to 100.
 // PREDELAY: Pre-delay time in milliseconds. Range: 0-500.
 // DIFFUSION: Diffusion percentage. Range: 0-100.
 // HIGHCUT: High-cut filter control. Range: 0-100.
