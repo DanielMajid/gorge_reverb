@@ -152,6 +152,8 @@ public:
     default:
       break;
     }
+
+    engine_dirty_ = true;
   }
 
   inline const char *getParameterStrValue(uint8_t index, int32_t value) const override final
@@ -187,6 +189,7 @@ public:
 
     reverb.clear();
     updateEngineParams(params_);
+    engine_dirty_ = false;
     initialized_ = true;
   }
 
@@ -200,6 +203,7 @@ public:
 
     reverb.clear();
     updateEngineParams(params_);
+    engine_dirty_ = false;
   }
 
   void process(const float *__restrict in, float *__restrict out, uint32_t frames) override final
@@ -214,10 +218,13 @@ public:
       return;
     }
 
+    // Keep one parameter snapshot for this block. Configuration is applied at
+    // the next block boundary after a control change, not on unchanged blocks.
     const Params p = params_;
-
-    // Recompute mapped coefficients per render call so UI moves are immediate.
-    updateEngineParams(p);
+    if (engine_dirty_) {
+      updateEngineParams(p);
+      engine_dirty_ = false;
+    }
 
     const float wet = p.mix < -1.f ? 0.f : (p.mix > 1.f ? 1.f : (p.mix + 1.f) * 0.5f);
     const float dry = 1.f - wet;
@@ -254,7 +261,12 @@ private:
 
     // Plateau-like decay shaping: map knob to 0.1..0.9999 then warp near long tails.
     const float decay_knob = 0.1f + clampf(p.decay, 0.f, 1.f) * (0.9999f - 0.1f);
-    const float decay = 1.0f - (1.0f - decay_knob) * (1.0f - decay_knob);
+    const float shaped_decay = 1.0f - (1.0f - decay_knob) * (1.0f - decay_knob);
+
+    // Keep normal operation just below lossless feedback. The shaped curve can
+    // otherwise round to exactly 1.0 in 32-bit float at the top of the control.
+    constexpr float kMaxStableDecay = 0.9999f;
+    const float decay = clampf(shaped_decay, 0.f, kMaxStableDecay);
 
     // Plateau-like mod rate response: square taper then map to 1..100 speed domain.
     float mod_rate = clampf(p.mod_rate, 0.f, 1.f);
@@ -285,4 +297,5 @@ private:
   Dattorro reverb;
   Params params_;
   bool initialized_ = false;
+  bool engine_dirty_ = true;
 };

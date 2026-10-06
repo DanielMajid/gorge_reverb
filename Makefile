@@ -1,6 +1,6 @@
 PROJECT ?= Gorge
 MODULE ?= revfx
-VERSION ?= 1.0.0
+VERSION ?= 1.0.4
 PROJECT_ROOT := $(CURDIR)
 
 include config.mk

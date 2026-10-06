@@ -48,7 +48,7 @@ const __unit_header unit_header_t unit_header = {
     .api = UNIT_API_VERSION,                               // API version for which unit was built. See runtime.h
     .dev_id = 0x4D616A69U,                                         // Developer ID. See https://github.com/korginc/logue-sdk/blob/master/developer_ids.md
     .unit_id = 0x00000002U,                                       // ID for this unit. Scoped within the context of a given dev_id.
-    .version = 0x00010000U,                                // This unit's version: major.minor.patch (major<<16 minor<<8 patch).
+    .version = 0x00010004U,                                // This unit's version: major.minor.patch (major<<16 minor<<8 patch).
     .name = "Gorge",                                       // Name for this unit, will be displayed on device
     .num_params = 10,                                      // Number of valid parameter descriptors. (max. 11)
     

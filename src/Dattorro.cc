@@ -152,14 +152,12 @@ void Dattorro1997Tank::setModSpeed(const float newModSpeed) {
 }
 
 void Dattorro1997Tank::setModDepth(const float newModDepth) {
-    lfoExcursion = newModDepth * lfoMaxExcursion * sampleRateScale;
+    lfoExcursionTarget = newModDepth * lfoMaxExcursion * sampleRateScale;
 }
 
 void Dattorro1997Tank::setModShape(const float shape) {
-    lfo1.setRevPoint(shape);
-    lfo2.setRevPoint(shape);
-    lfo3.setRevPoint(shape);
-    lfo4.setRevPoint(shape);
+    modShapeTarget = shape < 0.001f ? 0.001f :
+                     (shape > 0.999f ? 0.999f : shape);
 }
 
 void Dattorro1997Tank::setHighCutFrequency(const float frequency) {
@@ -234,6 +232,22 @@ void Dattorro1997Tank::initialiseDelaysAndApfs() {
 }
 
 void Dattorro1997Tank::tickApfModulation() {
+    // Smooth depth at audio rate so its delay excursion cannot jump with the knob.
+    constexpr float kDepthSmoothing = 0.003f;
+    lfoExcursion += (lfoExcursionTarget - lfoExcursion) * kDepthSmoothing;
+
+    // Shape needs four slope divisions. Updating its smoother every eight samples
+    // remains continuous to the ear without adding those divisions to every sample.
+    if (++modShapeUpdateCounter >= modShapeUpdateInterval) {
+        constexpr float kShapeSmoothing = 0.024f;
+        modShapeUpdateCounter = 0U;
+        modShape += (modShapeTarget - modShape) * kShapeSmoothing;
+        lfo1.setRevPoint(modShape);
+        lfo2.setRevPoint(modShape);
+        lfo3.setRevPoint(modShape);
+        lfo4.setRevPoint(modShape);
+    }
+
     leftApf1.delay.setDelayTime(lfo1.process() * lfoExcursion + scaledLeftApf1Time);
     leftApf2.delay.setDelayTime(lfo2.process() * lfoExcursion + scaledLeftApf2Time);
     rightApf1.delay.setDelayTime(lfo3.process() * lfoExcursion + scaledRightApf1Time);
@@ -372,10 +386,20 @@ void Dattorro::clear() {
 void Dattorro::setTimeScale(float timeScale) {
     constexpr float minTimeScale = 0.0001f;
     timeScale = timeScale < minTimeScale ? minTimeScale : timeScale;
+
+    if (timeScale == appliedTimeScale) {
+        return;
+    }
+
+    appliedTimeScale = timeScale;
     tank.setTimeScale(timeScale);
 }
 
 void Dattorro::setPreDelay(float t) {
+    if (t == preDelayTime) {
+        return;
+    }
+
     preDelayTime = t;
     preDelay.setDelayTime(preDelayTime * sampleRate);
 }
@@ -386,7 +410,9 @@ void Dattorro::setSampleRate(float newSampleRate) {
     sampleRate = newSampleRate;
     tank.setSampleRate(sampleRate);
     dattorroScaleFactor = sampleRate / dattorroSampleRate;
-    setPreDelay(preDelayTime);
+    // A sample-rate change needs a new delay length even when the delay time
+    // itself is unchanged, so bypass setPreDelay's normal equality guard.
+    preDelay.setDelayTime(preDelayTime * sampleRate);
     inApf1.delay.setDelayTime(dattorroScale(kInApf1Time));
     inApf2.delay.setDelayTime(dattorroScale(kInApf2Time));
     inApf3.delay.setDelayTime(dattorroScale(kInApf3Time));
@@ -512,4 +538,3 @@ float Dattorro::getRightOutput() const {
 float Dattorro::dattorroScale(float delayTime) {
     return delayTime * dattorroScaleFactor;
 }
-

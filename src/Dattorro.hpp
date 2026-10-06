@@ -11,6 +11,7 @@
 #include "dsp/modulation/LFO.hpp"
 #include <array>
 #include <cstddef>
+#include <cstdint>
 
 class Dattorro1997Tank {
 public:
@@ -123,6 +124,12 @@ private:
     float decay = 0.0f;
 
     float lfoExcursion = 0.0f;
+    float lfoExcursionTarget = 0.0f;
+
+    float modShape = 0.5f;
+    float modShapeTarget = 0.5f;
+    uint32_t modShapeUpdateCounter = 0U;
+    static constexpr uint32_t modShapeUpdateInterval = 8U;
 
     // Freeze Cross fade
     bool frozen = false;
@@ -201,6 +208,7 @@ public:
 
 private:
     float preDelayTime = 0.0f;
+    float appliedTimeScale = -1.0f;
     static constexpr long kInApf1Time = 141;
     static constexpr long kInApf2Time = 107;
     static constexpr long kInApf3Time = 379;
@@ -243,4 +251,3 @@ private:
 
     float dattorroScale(float delayTime);
 };
-
